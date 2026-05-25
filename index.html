@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>时阈信标</title>
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        -webkit-tap-highlight-color: transparent;
+    }
+    body {
+        width: 100vw;
+        height: 100vh;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #ffffff;
+        font-family:
+            -apple-system,
+            BlinkMacSystemFont,
+            "Segoe UI",
+            sans-serif;
+    }
+    .container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 28px;
+        padding: 24px;
+    }
+    .button-wrapper {
+        position: relative;
+        width: min(62vw, 280px);
+        height: min(62vw, 280px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .ring {
+        position: absolute;
+        border-radius: 50%;
+        transition: 0.3s ease;
+    }
+    .ring-1 {
+        width: 100%;
+        height: 100%;
+        background: rgba(120, 190, 255, 0.12);
+    }
+    .ring-2 {
+        width: 78%;
+        height: 78%;
+        background: rgba(120, 190, 255, 0.18);
+    }
+    .main-button {
+        position: relative;
+        width: 56%;
+        height: 56%;
+        border: none;
+        border-radius: 50%;
+        background: #8ecbff;
+        color: white;
+        font-size: clamp(16px, 2vw, 20px);
+        font-weight: 600;
+        cursor: pointer;
+        transition:
+            transform 0.15s ease,
+            background 0.3s ease,
+            box-shadow 0.3s ease;
+        box-shadow:
+            0 0 30px rgba(142, 203, 255, 0.45);
+    }
+    .main-button:active {
+        transform: scale(0.95);
+    }
+    .blocked .ring-1 {
+        background: rgba(255, 120, 70, 0.12);
+    }
+    .blocked .ring-2 {
+        background: rgba(255, 120, 70, 0.18);
+    }
+    .blocked .main-button {
+        background: #ff8b5c;
+        box-shadow:
+            0 0 30px rgba(255, 139, 92, 0.4);
+    }
+    .status {
+        text-align: center;
+        color: #666;
+        font-size: clamp(14px, 1.8vw, 18px);
+        line-height: 1.6;
+        min-height: 52px;
+    }
+    .title {
+        position: absolute;
+        top: 42px;
+        font-size: 14px;
+        color: #999;
+        letter-spacing: 2px;
+    }
+    /* 设置按钮 */
+    .settings-button {
+        position: fixed;
+        right: 22px;
+        bottom: 22px;
+        width: 44px;
+        height: 44px;
+        border: none;
+        border-radius: 50%;
+        background: #f2f2f2;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: 0.2s ease;
+    }
+    .settings-button:active {
+        transform: scale(0.92);
+    }
+    .gear {
+        font-size: 20px;
+        color: #888;
+    }
+    /* 设置面板 */
+    .settings-panel {
+        position: fixed;
+        right: 22px;
+        bottom: 76px;
+        width: 240px;
+        background: rgba(255,255,255,0.96);
+        border-radius: 20px;
+        padding: 18px;
+        box-shadow:
+            0 10px 40px rgba(0,0,0,0.08);
+        display: none;
+        flex-direction: column;
+        gap: 16px;
+        backdrop-filter: blur(12px);
+    }
+    .settings-panel.show {
+        display: flex;
+    }
+    .settings-title {
+        font-size: 15px;
+        color: #666;
+    }
+    .input-group {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+    .input-label {
+        font-size: 13px;
+        color: #888;
+    }
+    .day-input {
+        width: 100%;
+        padding: 12px;
+        border: none;
+        border-radius: 12px;
+        background: #f5f5f5;
+        font-size: 15px;
+        outline: none;
+    }
+    .save-button,
+    .unlock-button {
+        border: none;
+        border-radius: 14px;
+        padding: 12px;
+        font-size: 14px;
+        cursor: pointer;
+        transition: 0.2s ease;
+    }
+    .save-button {
+        background: #8ecbff;
+        color: white;
+    }
+    .unlock-button {
+        background: #ececec;
+        color: #666;
+    }
+    .save-button:active,
+    .unlock-button:active {
+        transform: scale(0.97);
+    }
+</style>
+</head>
+<body>
+<div class="title">
+    时阈信标
+</div>
+<div class="container">
+    <div class="button-wrapper" id="buttonWrapper">
+        <div class="ring ring-1"></div>
+        <div class="ring ring-2"></div>
+        <button class="main-button" id="takeButton">
+            记录
+        </button>
+    </div>
+    <div class="status" id="statusText">
+        正在检查记录...
+    </div>
+</div>
+<!-- 设置按钮 -->
+<button class="settings-button" id="settingsButton">
+    <span class="gear">⚙</span>
+</button>
+<!-- 设置窗口 -->
+<div class="settings-panel" id="settingsPanel">
+    <div class="settings-title">
+        设置
+    </div>
+    <div class="input-group">
+        <div class="input-label">
+            锁定时间（天）
+        </div>
+        <input
+            type="number"
+            min="1"
+            class="day-input"
+            id="dayInput"
+            value="7"
+        >
+    </div>
+    <button class="save-button" id="saveSettings">
+        保存时间
+    </button>
+    <button class="unlock-button" id="forceUnlock">
+        强制解除锁定
+    </button>
+</div>
+<script>
+    const STORAGE_KEY = "lastTakeTime";
+    const DAY_KEY = "lockDays";
+    const button = document.getElementById("takeButton");
+    const statusText = document.getElementById("statusText");
+    const wrapper = document.getElementById("buttonWrapper");
+    const settingsButton =
+        document.getElementById("settingsButton");
+    const settingsPanel =
+        document.getElementById("settingsPanel");
+    const dayInput =
+        document.getElementById("dayInput");
+    const saveSettings =
+        document.getElementById("saveSettings");
+    const forceUnlock =
+        document.getElementById("forceUnlock");
+    /* 默认7天 */
+    if (!localStorage.getItem(DAY_KEY)) {
+        localStorage.setItem(DAY_KEY, 7);
+    }
+    function getLockDays() {
+        return Number(localStorage.getItem(DAY_KEY));
+    }
+    function getLockTimeMs() {
+        return getLockDays()
+            * 24
+            * 60
+            * 60
+            * 1000;
+    }
+    function getLastTakeTime() {
+        return Number(localStorage.getItem(STORAGE_KEY));
+    }
+    function saveTakeTime() {
+        localStorage.setItem(STORAGE_KEY, Date.now());
+    }
+    function getRemainingTime(lastTime) {
+        const remain =
+            getLockTimeMs()
+            - (Date.now() - lastTime);
+        const days =
+            Math.floor(
+                remain / (1000 * 60 * 60 * 24)
+            );
+        const hours =
+            Math.floor(
+                (
+                    remain
+                    % (1000 * 60 * 60 * 24)
+                )
+                / (1000 * 60 * 60)
+            );
+        return `${days}天 ${hours}小时`;
+    }
+    function updateUI() {
+        const lastTime = getLastTakeTime();
+        if (!lastTime) {
+            wrapper.classList.remove("blocked");
+            statusText.innerHTML =
+                `允许记录<br>${getLockDays()}天冷却`;
+            button.innerText = "记录";
+            return;
+        }
+        const diff =
+            Date.now() - lastTime;
+        if (diff >= getLockTimeMs()) {
+            wrapper.classList.remove("blocked");
+            statusText.innerHTML =
+                `允许记录<br>${getLockDays()}天冷却`;
+            button.innerText = "记录";
+        } else {
+            wrapper.classList.add("blocked");
+            statusText.innerHTML =
+                `最近已记录<br>剩余 ${getRemainingTime(lastTime)}`;
+            button.innerText = "锁定";
+        }
+    }
+    /* 主按钮 */
+    button.addEventListener("click", () => {
+        const lastTime = getLastTakeTime();
+        if (lastTime) {
+            const diff =
+                Date.now() - lastTime;
+            if (diff < getLockTimeMs()) {
+                updateUI();
+                return;
+            }
+        }
+        saveTakeTime();
+        statusText.innerHTML =
+            "记录成功";
+        updateUI();
+    });
+    /* 设置按钮 */
+    settingsButton.addEventListener("click", () => {
+        settingsPanel.classList.toggle("show");
+    });
+    /* 保存设置 */
+    saveSettings.addEventListener("click", () => {
+        let value = Number(dayInput.value);
+        if (!value || value < 1) {
+            value = 1;
+        }
+        localStorage.setItem(DAY_KEY, value);
+        updateUI();
+    });
+    /* 强制解锁 */
+    forceUnlock.addEventListener("click", () => {
+        localStorage.removeItem(STORAGE_KEY);
+        updateUI();
+    });
+    /* 初始化 */
+    dayInput.value = getLockDays();
+    updateUI();
+</script>
+</body>
+</html>
